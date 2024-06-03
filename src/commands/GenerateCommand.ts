@@ -42,7 +42,7 @@ export class GenerateCommand extends BotCommandBase {
     constructor(artist: Artist) {
         super("commission", L("Commission a banger song!"));
         this.artist = artist;
-        this.addStringOption("song_description", L("A description of what the song should be about."), 4, 1000);
+        this.addStringOption("song_description", L("A description of what the song should be about."), 4, 500);
     }
 
     async execute(interaction: ChatInputCommandInteraction<CacheType>) {
@@ -68,7 +68,76 @@ export class GenerateCommand extends BotCommandBase {
             let msg = status;
             if (clip) done++;
             if (status.includes("Recording")) {
-                msg += `\nDone: ${done}/2`;
+                msg += `\n${L("Done")}: ${done}/2\n${L("This will take a few minutes.")}`;
+            }
+            this.interactionReply(interaction, msg);
+        });
+
+        if (result.error) {
+            await this.replyError(interaction, result.error);
+            return;
+        }
+
+        const embeds: EmbedBuilder[] = [];
+        const attachments: AttachmentBuilder[] = [];
+
+        for (const clip of result.clipInfos) {
+            try {
+                const mp3 = await this.artist.getMp3FromClip(clip);
+                const ea = buildSongEmbed(clip, embeds.length + 1, this.artist.name, Buffer.from(mp3));
+                embeds.push(ea.embed);
+                attachments.push(ea.attachment);
+            } catch (error) {
+                this.logger.logError("Error on getting mp3!", error);
+                await this.replyError(interaction, L("Failed to release track!"));
+                return;
+            }
+        }
+
+        this.replySuccess(interaction, L("Songs released!"), embeds, attachments);
+    }
+}
+
+export class GenerateCommandCustomLyrics extends BotCommandBase {
+    private readonly artist: Artist;
+
+    constructor(artist: Artist) {
+        super("commission_with_lyrics", L("Commission a banger song providing your own lyrics!"));
+        this.artist = artist;
+        this.addStringOption("song_title", L("Title of the song!"), 4, 1000);
+        this.addStringOption("song_lyrics", L("Lyrics of the song."), 100, 2500);
+    }
+
+    async execute(interaction: ChatInputCommandInteraction<CacheType>) {
+        const guildId = interaction.guildId;
+        const textchanel = interaction.channel;
+
+        if (!guildId || !textchanel) {
+            await this.replyError(interaction, L("Invalid request channel!"));
+            return;
+        }
+
+        const title = interaction.options.getString("song_title");
+        if (!title) {
+            await this.replyError(interaction, L("Missing song title!"));
+            return;
+        }
+
+        const lyrics = interaction.options.getString("song_lyrics");
+        if (!lyrics) {
+            await this.replyError(interaction, L("Missing lyrics!"));
+            return;
+        }
+
+        await interaction.deferReply();
+
+        let done = 0;
+
+        const result = await this.artist.comissionWithLyrics(title, lyrics, async (status, clip) => {
+            let msg = status;
+            if (clip) done++;
+            if (status.includes("Recording")) {
+                msg += `\n${L("Done")}: ${done}/2\n${L("This will take a few minutes.")}`;
             }
             this.interactionReply(interaction, msg);
         });

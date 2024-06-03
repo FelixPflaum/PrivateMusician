@@ -108,7 +108,7 @@ export class Artist {
         return freeClient;
     }
 
-    private async doComissionWork(client: SunoAiApi, songDesc: string, statusUpdate?: (status: string, doneClip?: ClipInfo) => void): Promise<{ error?: string, clipInfos: ClipInfo[] }> {
+    private async doComissionWork(client: SunoAiApi, songDesc: string | { title: string, text: string }, statusUpdate?: (status: string, doneClip?: ClipInfo) => void): Promise<{ error?: string, clipInfos: ClipInfo[] }> {
         try {
             if (statusUpdate) statusUpdate(L("Checking payment..."));
             const binfo = await client.checkBillingInfo();
@@ -122,14 +122,20 @@ export class Artist {
 
         let text: string;
         let title: string;
-        try {
-            if (statusUpdate) statusUpdate(L("Writing fire lyrics..."));
-            const lyrics = await client.generateLyrics(songDesc);
-            text = lyrics.text;
-            title = lyrics.title;
-        } catch (error) {
-            this.logger.logError(`Error on getting lyrics with prompt: ${songDesc}`, error);
-            return { error: L("Unable to compose lyrics!"), clipInfos: [] };
+
+        if (typeof songDesc === "string") {
+            try {
+                if (statusUpdate) statusUpdate(L("Writing fire lyrics..."));
+                const lyrics = await client.generateLyrics(songDesc);
+                text = lyrics.text;
+                title = lyrics.title;
+            } catch (error) {
+                this.logger.logError(`Error on getting lyrics with prompt: ${songDesc}`, error);
+                return { error: L("Unable to compose lyrics!"), clipInfos: [] };
+            }
+        } else {
+            text = songDesc.text;
+            title = songDesc.title;
         }
 
         let clipInfos: ClipInfo[];
@@ -160,6 +166,20 @@ export class Artist {
             client = await this.getClient();
             if (!client || !client.client) return { error: L("I'm already busy!"), clipInfos: [] };
             return this.doComissionWork(client.client, songDesc, statusUpdate);
+        } catch (error) {
+            this.logger.logError(`Error on comission`, error);
+            return { error: L("Studio exploded or something."), clipInfos: [] };
+        } finally {
+            if (client) client.isUsed = false;
+        }
+    }
+
+    async comissionWithLyrics(title: string, text: string, statusUpdate?: (status: string, doneClip?: ClipInfo) => void): Promise<{ error?: string, clipInfos: ClipInfo[] }> {
+        let client: ClientData | undefined;
+        try {
+            client = await this.getClient();
+            if (!client || !client.client) return { error: L("I'm already busy!"), clipInfos: [] };
+            return this.doComissionWork(client.client, { title, text }, statusUpdate);
         } catch (error) {
             this.logger.logError(`Error on comission`, error);
             return { error: L("Studio exploded or something."), clipInfos: [] };
