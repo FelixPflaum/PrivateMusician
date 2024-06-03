@@ -1,13 +1,13 @@
+import { GenerateCommand } from "./commands/GenerateCommand";
 import { getConfig } from "./config";
-import { SunoAiApi } from "./SunoAiApi";
+import { Discordbot } from "./discord_bot/DiscordBot";
+import { Artist } from "./Artist";
 
-const cfg = getConfig();
-const clientData = cfg.clients[0]!;
-SunoAiApi.create(clientData.agent, clientData.cookie).then(async sapi => {
-    const c = await sapi.checkBillingInfo();
-    const l = await sapi.generateLyrics("a song about a cat that is really, really muscular and a literal god");
-    console.log(l.title);
-    console.log(l.text);
-}).catch(err => {
-    console.error(err);
-});
+async function run() {
+    const cfg = getConfig();
+    const artist = new Artist(cfg.artistName, cfg.clients);
+    const discord = new Discordbot(cfg.discordToken);
+    discord.registerCommand(new GenerateCommand(artist));
+    await discord.connect();
+}
+run();

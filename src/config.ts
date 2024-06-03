@@ -6,12 +6,16 @@ export interface ClientDef {
 }
 
 export interface ConfigFile {
+    discordToken: string;
+    artistName: string;
     clients: ClientDef[];
 }
 
 const CONFIG_PATH = "config.json";
 
 const DEFAULT_CONFIG: ConfigFile = {
+    discordToken: "",
+    artistName: "MC AI",
     clients: [{
         agent: "",
         cookie: "",

@@ -1,92 +1,4 @@
-interface BillingResponse {
-    cancel_on: any; // Unknown
-    changing_to: any; // Unknown
-    credit_packs: { id: string, amount: number, price_usd: number }[];
-    credits: number;
-    is_active: boolean;
-    is_past_due: boolean;
-    monthly_limit: number;
-    monthly_usage: number;
-    period: null
-    plan: any; // Unknown
-    plans: { id: string, level: number, name: string, features: string, monthly_price_usd: number }[];
-    renews_on: any; // Unknown
-    subscription_type: any; // Unknown
-    total_credits_left: number;
-};
-
-interface LyricsResponse {
-    id: string;
-};
-
-interface LyricsProgressResponse {
-    text?: string;
-    title?: string;
-    status: "complete" | "";
-};
-
-interface GenerateRequest {
-    continue_at?: any; // Unknown
-    continue_clip_id?: number;
-    infill_end_s?: any; // Unknown
-    infill_start_s?: any; // Unknown
-    mv: string;
-    gpt_description_prompt?: string; // GPT prompt.
-    prompt: string; // Lyrics prompt or custom lyrics.
-    tags?: string; // Tags aka style if used with custom lyrics.
-    title?: string; // Song title if used with custom lyrics.
-    make_instrumental?: boolean;
-};
-
-interface GenerateMetaData {
-    prompt?: string; // Lyrics prompt or custom lyrics in custom mode.
-    tags?: string; // Tags if used in custom mode.
-    gpt_description_prompt?: string;
-    audio_prompt_id: any; // Unknown
-    history: any; // Unknown
-    concat_history: any; // Unknown
-    type: any; // Unknown
-    duration?: number;
-    refund_credits: any; // Unknown
-    stream?: boolean;
-    error_type: any;
-    error_message?: string;
-};
-
-interface ClipInfo {
-    id: string;
-    video_url: string;
-    audio_url: string;
-    image_url?: string;
-    image_large_url?: string;
-    is_video_pending: boolean;
-    major_model_version: string;
-    model_name: string;
-    metadata: GenerateMetaData;
-    is_liked: false,
-    user_id: string;
-    display_name: string;
-    handle: string;
-    is_handle_updated: boolean;
-    avatar_image_url: any; // Unknown
-    is_trashed: boolean;
-    reaction: any; // Unknown
-    title: string;
-    created_at: string;
-    status: "completed" | "submitted" | "streaming";
-};
-
-interface GenerateResponse {
-    id: string;
-    clips: ClipInfo[],
-    metadata: GenerateMetaData;
-    major_model_version: string;
-    status: "complete" | "";
-    created_at: string;
-    batch_size: number;
-};
-
-type ClipInfoResponse = ClipInfo[];
+import { BillingResponse, ClipInfo, ClipInfoResponse, GenerateRequest, GenerateResponse, LyricsProgressResponse, LyricsResponse } from "./ApiMsgTypes";
 
 /**
  * Resolve after a given duration.
@@ -116,13 +28,6 @@ export class SunoAiApi {
     private constructor(headers: { [key: string]: string }, sessionId: string) {
         this.headers = headers;
         this.sessionId = sessionId;
-
-        const renewLoop = () => {
-            this.renewToken().then(() => {
-                this.renewTimeout = setTimeout(renewLoop, 100_000);
-            });
-        }
-        renewLoop();
     }
 
     /**
@@ -214,7 +119,7 @@ export class SunoAiApi {
         return await res.json();
     }
 
-    private async renewToken(): Promise<void> {
+    private renewToken: () => Promise<void> = async () => {
         const now = Date.now();
         if (now - this.lastTokenRenew < 60_000) return;
         this.lastTokenRenew = now;
@@ -225,6 +130,8 @@ export class SunoAiApi {
 
         console.log("newToken:", token);
         this.token = token;
+
+        this.renewTimeout = setTimeout(this.renewToken, 100_000);
     }
 
     /**
@@ -248,10 +155,10 @@ export class SunoAiApi {
 
         const res = await this.apiPost(`${SunoAiApi.API_URL}/api/generate/lyrics/`, { prompt }) as LyricsResponse;
         const id = res.id;
-        await sleep(2);
+        await sleep(5_000);
         let lyricsRes = await this.apiGet(`${SunoAiApi.API_URL}/api/generate/lyrics/${id}`) as LyricsProgressResponse;
         while (lyricsRes.status !== 'complete') {
-            await sleep(3);
+            await sleep(5_000);
             lyricsRes = await this.apiGet(`${SunoAiApi.API_URL}/api/generate/lyrics/${id}`) as LyricsProgressResponse;
         }
 
@@ -262,11 +169,11 @@ export class SunoAiApi {
     }
 
     /**
-     * Generate a song using custom lyrics and style.
+     * Generate a song using custom lyrics and style. Resolve when status of all clips is completed.
      * @param title The title of the song.
      * @param lyrics Custom lyrics or a lyrics generation prompt.
      * @param styleTags 
-     * @returns 
+     * @returns Array of ClipInfo objects when their status changes to streaming or completed.
      */
     generateCustomSong(title: string, lyrics: string, styleTags: string) {
         return this.generateSongs(lyrics, { title: title, tags: styleTags });
@@ -277,12 +184,13 @@ export class SunoAiApi {
      * @param ids The ids of the clips to wait for.
      * @param onClipDone Callback for when individual clips are completed.
      */
-    async waitForClipCompletion(ids: string[], onClipDone: (id: string) => void) {
-        const progressUrl = `${SunoAiApi.API_URL}/api/feed/?ids=${ids.join(',')}`;
-       
-        const lastStatus: { [id: string]: string } = {};
-        for (const id of ids) {
-            lastStatus[id] = "";
+    async waitForClipCompletion(clips: ClipInfo[], onClipDone: (clip: ClipInfo) => void): Promise<ClipInfo[]> {
+        const clipIds = clips.map((clip) => clip.id);
+        const progressUrl = `${SunoAiApi.API_URL}/api/feed/?ids=${clipIds.join(',')}`;
+
+        const lastStatus: { [id: string]: ClipInfo } = {};
+        for (const clip of clips) {
+            lastStatus[clip.id] = clip;
         }
 
         while (true) {
@@ -293,17 +201,17 @@ export class SunoAiApi {
                 if (clip.metadata.error_message) {
                     throw new Error("Error on song generation request: " + clip.metadata.error_message);
                 }
-                if (clip.status == "completed") {
-                    if (lastStatus[clip.id] != clip.status) {
-                        lastStatus[clip.id] = clip.status;
-                        onClipDone(clip.id);
+                if (clip.status == "complete") {
+                    if (lastStatus[clip.id]?.status != clip.status) {
+                        lastStatus[clip.id] = clip;
+                        onClipDone(clip);
                     }
                     return true;
                 }
                 return false;
             });
-            if (done) return;
-            await sleep(10);
+            if (done) return Object.values(lastStatus);
+            await sleep(10_000);
         }
     }
 
@@ -339,7 +247,7 @@ export class SunoAiApi {
         const clipIds = res.clips.map((audio) => audio.id);
         const progressUrl = `${SunoAiApi.API_URL}/api/feed/?ids=${clipIds.join(',')}`;
         while (true) {
-            await sleep(10);
+            await sleep(10_000);
             await this.renewToken();
             console.log("Get clip info: " + progressUrl);
             const progressRes = await this.apiGet(progressUrl) as ClipInfoResponse;
@@ -348,7 +256,7 @@ export class SunoAiApi {
                 if (clip.metadata.error_message) throw new Error("Error on song generation request: " + clip.metadata.error_message);
             });
 
-            if (progressRes.every(clip => clip.status == "streaming" || clip.status == "completed")) {
+            if (progressRes.every(clip => clip.status == "streaming" || clip.status == "complete")) {
                 return progressRes;
             }
         }
