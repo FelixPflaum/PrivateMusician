@@ -18,7 +18,7 @@ export function hhmmss(timeInSec: number): string {
 }
 
 function buildSongEmbed(song: ClipInfo, songNum: number, artist: string, mp3: Buffer) {
-    const fileName = `${artist} - ${song.title}_${songNum}.mp3`;
+    const fileName = (`${artist} - ${song.title}_${songNum}.mp3`).replace(/ /g, "_");
     const attachment = new AttachmentBuilder(mp3, { name: fileName });
 
     const embed = new EmbedBuilder()

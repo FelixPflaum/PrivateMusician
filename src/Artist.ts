@@ -48,10 +48,12 @@ export class Artist {
     private readonly logger: Logger = new Logger("Artist");
     readonly name: string;
     private style: string;
+    private language: string;
 
-    constructor(name: string, style: string, clientInfos: { agent: string, cookie: string }[]) {
+    constructor(name: string, style: string, lang: string, clientInfos: { agent: string, cookie: string }[]) {
         this.name = name;
         this.style = style;
+        this.language = lang;
 
         for (let i = 0; i < clientInfos.length; i++) {
             this.clients[i] = new ClientData(i, clientInfos[i]!);
@@ -126,6 +128,11 @@ export class Artist {
         if (typeof songDesc === "string") {
             try {
                 if (statusUpdate) statusUpdate(L("Writing fire lyrics..."));
+
+                if (!songDesc.toLowerCase().includes(this.language)) {
+                    songDesc += " Write song in the language: " + this.language;
+                }
+
                 const lyrics = await client.generateLyrics(songDesc);
                 text = lyrics.text;
                 title = lyrics.title;
@@ -229,5 +236,21 @@ export class Artist {
      */
     getStyle() {
         return this.style;
+    }
+
+    /**
+    * Set language used for generated lyrics.
+    * @param style 
+    */
+    setLang(language: string) {
+        this.language = language;
+    }
+
+    /**
+     * Get current style tags.
+     * @returns 
+     */
+    getLang() {
+        return this.language;
     }
 }

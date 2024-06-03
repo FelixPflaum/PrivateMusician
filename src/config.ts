@@ -9,6 +9,7 @@ export interface ConfigFile {
     discordToken: string;
     artistName: string;
     musicStyle: string;
+    musicLanguage: string;
     clients: ClientDef[];
 }
 
@@ -18,6 +19,7 @@ const DEFAULT_CONFIG: ConfigFile = {
     discordToken: "",
     artistName: "MC AI",
     musicStyle: "crappy and bad",
+    musicLanguage: "Schweitzerdeutsch",
     clients: [{
         agent: "",
         cookie: "",
