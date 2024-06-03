@@ -47,10 +47,11 @@ export class Artist {
     private readonly clients: ClientData[] = [];
     private readonly logger: Logger = new Logger("Artist");
     readonly name: string;
-    private style = "memez";
+    private style: string;
 
-    constructor(name: string, clientInfos: { agent: string, cookie: string }[]) {
+    constructor(name: string, style: string, clientInfos: { agent: string, cookie: string }[]) {
         this.name = name;
+        this.style = style;
 
         for (let i = 0; i < clientInfos.length; i++) {
             this.clients[i] = new ClientData(i, clientInfos[i]!);
@@ -170,7 +171,7 @@ export class Artist {
     async getMp3FromClip(clip: ClipInfo) {
         const res = await fetch(`https://cdn1.suno.ai/${clip.id}.mp3`);
         if (res.status != 200) {
-            this.logger.logError("Could not load mp3 file!", await res.text());
+            this.logger.logError(L("Could not load mp3 file!"), await res.text());
             throw new Error("Could not load mp3 file!");
         }
         return await res.arrayBuffer();
@@ -182,5 +183,9 @@ export class Artist {
      */
     setStyle(style: string) {
         this.style = style;
+    }
+
+    getStyle() {
+        return this.style;
     }
 }

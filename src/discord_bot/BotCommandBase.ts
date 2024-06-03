@@ -93,8 +93,8 @@ export abstract class BotCommandBase {
      * @param msg 
      * @returns 
      */
-    protected replySuccess(interaction: ChatInputCommandInteraction, msg: string) {
-        return this.interactionReply(interaction, "🥏 " + msg);
+    protected replySuccess(interaction: ChatInputCommandInteraction, msg: string, embeds?: (Embed | EmbedBuilder)[], files?: (AttachmentBuilder)[]) {
+        return this.interactionReply(interaction, "🥏 " + msg, embeds, files);
     }
 
     /**

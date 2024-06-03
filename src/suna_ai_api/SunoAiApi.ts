@@ -159,7 +159,7 @@ export class SunoAiApi {
         const id = res.id;
         await sleep(5_000);
         let lyricsRes = await this.apiGet(`${SunoAiApi.API_URL}/api/generate/lyrics/${id}`) as LyricsProgressResponse;
-        while (lyricsRes.status !== 'complete') {
+        while (lyricsRes.status !== "complete") {
             await sleep(5_000);
             lyricsRes = await this.apiGet(`${SunoAiApi.API_URL}/api/generate/lyrics/${id}`) as LyricsProgressResponse;
         }
@@ -188,7 +188,7 @@ export class SunoAiApi {
      */
     async waitForClipCompletion(clips: ClipInfo[], onClipDone: (clip: ClipInfo) => void): Promise<ClipInfo[]> {
         const clipIds = clips.map((clip) => clip.id);
-        const progressUrl = `${SunoAiApi.API_URL}/api/feed/?ids=${clipIds.join(',')}`;
+        const progressUrl = `${SunoAiApi.API_URL}/api/feed/?ids=${clipIds.join(",")}`;
 
         const lastStatus: { [id: string]: ClipInfo } = {};
         for (const clip of clips) {
@@ -247,7 +247,7 @@ export class SunoAiApi {
         this.logger.log("generateSongs res: " + JSON.stringify(res, null, 4));
 
         const clipIds = res.clips.map((audio) => audio.id);
-        const progressUrl = `${SunoAiApi.API_URL}/api/feed/?ids=${clipIds.join(',')}`;
+        const progressUrl = `${SunoAiApi.API_URL}/api/feed/?ids=${clipIds.join(",")}`;
         while (true) {
             await sleep(10_000);
             await this.renewToken();

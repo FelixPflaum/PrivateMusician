@@ -67,7 +67,9 @@ export class GenerateCommand extends BotCommandBase {
         const result = await this.artist.comission(prompt, async (status, clip) => {
             let msg = status;
             if (clip) done++;
-            msg += `\nDone: ${done}/2`;
+            if (status.includes("Recording")) {
+                msg += `\nDone: ${done}/2`;
+            }
             this.interactionReply(interaction, msg);
         });
 
@@ -87,11 +89,11 @@ export class GenerateCommand extends BotCommandBase {
                 attachments.push(ea.attachment);
             } catch (error) {
                 this.logger.logError("Error on getting mp3!", error);
-                await this.replyError(interaction, "Failed to release track!");
+                await this.replyError(interaction, L("Failed to release track!"));
                 return;
             }
         }
 
-        this.interactionReply(interaction, "Done!", embeds, attachments);
+        this.replySuccess(interaction, L("Songs released!"), embeds, attachments);
     }
 }
