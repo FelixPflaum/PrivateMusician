@@ -160,6 +160,12 @@ export class Artist {
         }
     }
 
+    /**
+     * Create song from description prompt.
+     * @param songDesc 
+     * @param statusUpdate 
+     * @returns 
+     */
     async comission(songDesc: string, statusUpdate?: (status: string, doneClip?: ClipInfo) => void): Promise<{ error?: string, clipInfos: ClipInfo[] }> {
         let client: ClientData | undefined;
         try {
@@ -174,6 +180,13 @@ export class Artist {
         }
     }
 
+    /**
+     * Create song with custom lyrics.
+     * @param title 
+     * @param text 
+     * @param statusUpdate 
+     * @returns 
+     */
     async comissionWithLyrics(title: string, text: string, statusUpdate?: (status: string, doneClip?: ClipInfo) => void): Promise<{ error?: string, clipInfos: ClipInfo[] }> {
         let client: ClientData | undefined;
         try {
@@ -188,6 +201,11 @@ export class Artist {
         }
     }
 
+    /**
+     * Get mp3 files for complete clip.
+     * @param clip The completed clip.
+     * @returns MP3 file as ArrayBuffer.
+     */
     async getMp3FromClip(clip: ClipInfo) {
         const res = await fetch(`https://cdn1.suno.ai/${clip.id}.mp3`);
         if (res.status != 200) {
@@ -205,6 +223,10 @@ export class Artist {
         this.style = style;
     }
 
+    /**
+     * Get current style tags.
+     * @returns 
+     */
     getStyle() {
         return this.style;
     }

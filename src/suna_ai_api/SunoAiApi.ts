@@ -197,7 +197,7 @@ export class SunoAiApi {
 
         while (true) {
             await this.renewToken();
-            this.logger.log("Get clip info: " + progressUrl);
+            this.logger.log("Get clip progress info: " + progressUrl);
             const progressRes = await this.apiGet(progressUrl) as ClipInfoResponse;
             const done = progressRes.every(clip => {
                 if (clip.metadata.error_message) {
@@ -244,7 +244,7 @@ export class SunoAiApi {
 
         this.logger.log("generateSongs req: " + JSON.stringify(reqOptions, null, 4));
         const res = await this.apiPost(`${SunoAiApi.API_URL}/api/generate/v2/`, reqOptions) as GenerateResponse;
-        this.logger.log("generateSongs res: " + JSON.stringify(res, null, 4));
+        //this.logger.log("generateSongs res: " + JSON.stringify(res, null, 4));
 
         const clipIds = res.clips.map((audio) => audio.id);
         const progressUrl = `${SunoAiApi.API_URL}/api/feed/?ids=${clipIds.join(",")}`;
