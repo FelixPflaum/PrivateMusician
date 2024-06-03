@@ -1,3 +1,4 @@
+import { Logger } from "../Logger";
 import { BillingResponse, ClipInfo, ClipInfoResponse, GenerateRequest, GenerateResponse, LyricsProgressResponse, LyricsResponse } from "./ApiMsgTypes";
 
 /**
@@ -19,6 +20,7 @@ export class SunoAiApi {
     private static CLERK_URL = "https://clerk.suno.com";
     private static API_URL = "https://studio-api.suno.ai";
 
+    private readonly logger = new Logger("SunoAiPi");
     private readonly sessionId: string;
     private readonly headers: { [key: string]: string };
     private token?: string;
@@ -124,11 +126,11 @@ export class SunoAiApi {
         if (now - this.lastTokenRenew < 60_000) return;
         this.lastTokenRenew = now;
 
-        console.log("renew token");
+        this.logger.log("renew token");
         const res = await this.apiPost(`${SunoAiApi.CLERK_URL}/v1/client/sessions/${this.sessionId}/tokens?_clerk_js_version==4.73.2`);
         const token = res["jwt"];
 
-        console.log("newToken:", token);
+        this.logger.log("newToken: " + token);
         this.token = token;
 
         this.renewTimeout = setTimeout(this.renewToken, 100_000);
@@ -195,7 +197,7 @@ export class SunoAiApi {
 
         while (true) {
             await this.renewToken();
-            console.log("Get clip info: " + progressUrl);
+            this.logger.log("Get clip info: " + progressUrl);
             const progressRes = await this.apiGet(progressUrl) as ClipInfoResponse;
             const done = progressRes.every(clip => {
                 if (clip.metadata.error_message) {
@@ -240,16 +242,16 @@ export class SunoAiApi {
             reqOptions.title = customSongData.title;
         }
 
-        console.log("generateSongs req: " + JSON.stringify(reqOptions, null, 4));
+        this.logger.log("generateSongs req: " + JSON.stringify(reqOptions, null, 4));
         const res = await this.apiPost(`${SunoAiApi.API_URL}/api/generate/v2/`, reqOptions) as GenerateResponse;
-        console.log("generateSongs res: " + JSON.stringify(res, null, 4));
+        this.logger.log("generateSongs res: " + JSON.stringify(res, null, 4));
 
         const clipIds = res.clips.map((audio) => audio.id);
         const progressUrl = `${SunoAiApi.API_URL}/api/feed/?ids=${clipIds.join(',')}`;
         while (true) {
             await sleep(10_000);
             await this.renewToken();
-            console.log("Get clip info: " + progressUrl);
+            this.logger.log("Get clip info: " + progressUrl);
             const progressRes = await this.apiGet(progressUrl) as ClipInfoResponse;
 
             progressRes.every(clip => {
