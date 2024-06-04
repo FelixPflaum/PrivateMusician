@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, CacheType } from "discord.js";
 import { BotCommandBase } from "../discord_bot/BotCommandBase";
 import { Artist } from "../Artist";
-import { L } from "../Localization";
+import { L } from "../lang/language";
 import { setConfigValue } from "../config";
 
 export class LangCommand extends BotCommandBase {
@@ -31,6 +31,6 @@ export class LangCommand extends BotCommandBase {
 
         setConfigValue("musicLanguage", lang);
         this.artist.language = lang;
-        this.replySuccess(interaction, `${L("Music language set to: ")}\`${lang}\``);
+        this.replySuccess(interaction, L("Music language set to: {lang}", {lang}));
     }
 }

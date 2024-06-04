@@ -11,6 +11,7 @@ export interface ConfigFile {
     musicStyle: string;
     musicLanguage: string;
     clients: ClientDef[];
+    locale: string;
 }
 
 const CONFIG_PATH = "config.json";
@@ -20,6 +21,7 @@ const DEFAULT_CONFIG: ConfigFile = {
     artistName: "MC AI",
     musicStyle: "crappy and bad",
     musicLanguage: "Schweitzerdeutsch",
+    locale: "en",
     clients: [{
         agent: "",
         cookie: "",

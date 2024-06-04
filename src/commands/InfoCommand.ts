@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, CacheType } from "discord.js";
 import { BotCommandBase } from "../discord_bot/BotCommandBase";
 import { Artist } from "../Artist";
-import { L } from "../Localization";
+import { L } from "../lang/language";
 
 export class InfoCommand extends BotCommandBase {
     private readonly artist: Artist;
@@ -20,7 +20,8 @@ export class InfoCommand extends BotCommandBase {
             return;
         }
 
-        let info = `${L("Hello! My name is ")} ${this.artist.name}.\n${L("My music style is")} ${this.artist.style}.\n${L("I write my own songs in")} ${this.artist.language}.`
+        let info = L("Hello! My name is {name}. My music style is {style}. I write my own songs in {lang}.",
+            { name: this.artist.name, style: this.artist.style, lang: this.artist.language });
         this.replySuccess(interaction, info);
     }
 }

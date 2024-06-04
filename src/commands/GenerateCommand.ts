@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, CacheType, EmbedBuilder, AttachmentBuilder } from "discord.js";
 import { BotCommandBase } from "../discord_bot/BotCommandBase";
 import { Artist, ComissionState, ComissionStatusFunc } from "../Artist";
-import { L } from "../Localization";
+import { L } from "../lang/language";
 import { ClipInfo } from "../suna_ai_api/ApiMsgTypes";
 
 /**
@@ -67,7 +67,7 @@ abstract class GenerateCommandBase extends BotCommandBase {
                 case ComissionState.streaming:
                 case ComissionState.clipDone:
                     if (status == ComissionState.clipDone) done++;
-                    statusText += `\n${L("Done")}: ${done}/2\n${L("This will take a few minutes.")}`;
+                    statusText += "\n" + L("Done: {done}/2\nThis will take a few minutes.", { done });
             }
             this.interactionReply(interaction, statusText);
         });

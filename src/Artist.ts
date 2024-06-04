@@ -1,5 +1,5 @@
-import { L } from "./Localization";
 import { Logger } from "./Logger";
+import { L } from "./lang/language";
 import { ClipInfo } from "./suna_ai_api/ApiMsgTypes";
 import { SunoAiApi } from "./suna_ai_api/SunoAiApi";
 

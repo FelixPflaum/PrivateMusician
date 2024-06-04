@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, CacheType } from "discord.js";
 import { BotCommandBase } from "../discord_bot/BotCommandBase";
 import { Artist } from "../Artist";
-import { L } from "../Localization";
+import { L } from "../lang/language";
 import { setConfigValue } from "../config";
 
 export class StyleCommand extends BotCommandBase {
@@ -31,6 +31,6 @@ export class StyleCommand extends BotCommandBase {
 
         setConfigValue("musicStyle", tags);
         this.artist.style = tags;
-        this.replySuccess(interaction, `${L("Music style set to: ")}\`${tags}\``);
+        this.replySuccess(interaction, L("Music style set to: `{style}`", { style: tags }));
     }
 }
