@@ -178,7 +178,8 @@ export class Artist {
         try {
             client = await this.getClient();
             if (!client || !client.client) return { error: L("I'm already busy!"), clipInfos: [] };
-            return this.doComissionWork(client.client, songDesc, statusUpdate);
+            const res = await this.doComissionWork(client.client, songDesc, statusUpdate);
+            return res;
         } catch (error) {
             this.logger.logError(`Error on comission`, error);
             return { error: L("Studio exploded or something."), clipInfos: [] };
@@ -199,7 +200,8 @@ export class Artist {
         try {
             client = await this.getClient();
             if (!client || !client.client) return { error: L("I'm already busy!"), clipInfos: [] };
-            return this.doComissionWork(client.client, { title, text }, statusUpdate);
+            const res = await this.doComissionWork(client.client, { title, text }, statusUpdate);
+            return res;
         } catch (error) {
             this.logger.logError(`Error on comission`, error);
             return { error: L("Studio exploded or something."), clipInfos: [] };
