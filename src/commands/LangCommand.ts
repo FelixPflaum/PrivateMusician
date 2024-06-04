@@ -30,7 +30,7 @@ export class LangCommand extends BotCommandBase {
         }
 
         setConfigValue("musicLanguage", lang);
-        this.artist.setLang(lang);
+        this.artist.language = lang;
         this.replySuccess(interaction, `${L("Music language set to: ")}\`${lang}\``);
     }
 }

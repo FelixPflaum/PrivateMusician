@@ -30,7 +30,7 @@ export class StyleCommand extends BotCommandBase {
         }
 
         setConfigValue("musicStyle", tags);
-        this.artist.setStyle(tags);
+        this.artist.style = tags;
         this.replySuccess(interaction, `${L("Music style set to: ")}\`${tags}\``);
     }
 }

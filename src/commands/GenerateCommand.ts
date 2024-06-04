@@ -42,7 +42,7 @@ export class GenerateCommand extends BotCommandBase {
     constructor(artist: Artist) {
         super("commission", L("Commission a banger song!"));
         this.artist = artist;
-        this.addStringOption("song_description", L("A description of what the song should be about."), 4, 500);
+        this.addStringOption("song_description", L("A description of what the song should be about."), 10, 500);
     }
 
     async execute(interaction: ChatInputCommandInteraction<CacheType>) {
@@ -67,7 +67,7 @@ export class GenerateCommand extends BotCommandBase {
         const result = await this.artist.comission(prompt, async (status, clip) => {
             let msg = status;
             if (clip) done++;
-            if (status.includes("Recording")) {
+            if (status == L("Recording songs...")) {
                 msg += `\n${L("Done")}: ${done}/2\n${L("This will take a few minutes.")}`;
             }
             this.interactionReply(interaction, msg);
@@ -136,7 +136,7 @@ export class GenerateCommandCustomLyrics extends BotCommandBase {
         const result = await this.artist.comissionWithLyrics(title, lyrics, async (status, clip) => {
             let msg = status;
             if (clip) done++;
-            if (status.includes("Recording")) {
+            if (status == L("Recording songs...")) {
                 msg += `\n${L("Done")}: ${done}/2\n${L("This will take a few minutes.")}`;
             }
             this.interactionReply(interaction, msg);

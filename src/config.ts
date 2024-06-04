@@ -1,8 +1,8 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFile, writeFileSync } from "fs";
 
 export interface ClientDef {
-    agent: string;
-    cookie: string;
+    agent: string; // Browser user agent to use.
+    cookie: string; // Cookies of a logged in session sent with the clerk request.
 }
 
 export interface ConfigFile {
@@ -46,9 +46,17 @@ export function getConfig() {
     return data;
 }
 
-export function setConfigValue(key: keyof ConfigFile, value: any) {
-    getConfig();
-    if (typeof value !== typeof data![key]) throw new Error("Config value type mismatch!");
-    data![key] = value;
-    writeFileSync(CONFIG_PATH, JSON.stringify(data!, null, 4));
+/**
+ * Change config value and save to file.
+ * @param key 
+ * @param value 
+ */
+export async function setConfigValue<K extends keyof ConfigFile>(key: K, value: ConfigFile[K]) {
+    data = getConfig();
+    if (typeof value !== typeof data[key]) throw new Error("Config value type mismatch!");
+    data[key] = value;
+
+    writeFile(CONFIG_PATH, JSON.stringify(data!, null, 4), err => {
+        if (err) console.error(err);
+    });
 }

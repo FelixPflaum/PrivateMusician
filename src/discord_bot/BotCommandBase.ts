@@ -69,8 +69,7 @@ export abstract class BotCommandBase {
                 await interaction.editReply(payload);
             else
                 await interaction.reply(payload);
-        }
-        catch (error) {
+        } catch (error) {
             this.logger.logError("Interaction error!", error);
             return false;
         }

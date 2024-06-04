@@ -20,7 +20,7 @@ export class InfoCommand extends BotCommandBase {
             return;
         }
 
-        let info = `${L("Hello! My name is ")} ${this.artist.name}.\n${L("My music style is")} ${this.artist.getStyle()}.\n${L("I write my own songs in")} ${this.artist.getLang()}.`
+        let info = `${L("Hello! My name is ")} ${this.artist.name}.\n${L("My music style is")} ${this.artist.style}.\n${L("I write my own songs in")} ${this.artist.language}.`
         this.replySuccess(interaction, info);
     }
 }
