@@ -1,8 +1,8 @@
 import { ChatInputCommandInteraction, CacheType, EmbedBuilder, AttachmentBuilder } from "discord.js";
 import { BotCommandBase } from "../discord_bot/BotCommandBase";
-import { Artist, ComissionState, ComissionStatusFunc } from "../Artist";
+import { Artist, ComissionState } from "../Artist";
+import type { ComissionStatusFunc, SongInfo } from "../Artist";
 import { L } from "../lang/language";
-import { ClipInfo } from "../suna_ai_api/ApiMsgTypes";
 
 /**
  * Formats seconds into [HH:]MM:SS
@@ -17,7 +17,7 @@ export function hhmmss(timeInSec: number): string {
     return timeStr;
 }
 
-function buildEmbedAndAttachment(song: ClipInfo, songNum: number, artist: string, mp3: Buffer) {
+function buildEmbedAndAttachment(song: SongInfo, songNum: number, artist: string, mp3: Buffer) {
     const fileName = (`${artist} - ${song.title}_${songNum}.mp3`).replace(/ /g, "_");
     const attachment = new AttachmentBuilder(mp3, { name: fileName });
 
@@ -25,13 +25,12 @@ function buildEmbedAndAttachment(song: ClipInfo, songNum: number, artist: string
         .setTitle(`${song.title} (Variant ${songNum})`)
         .setColor("#41a92f")
         .setFields(
-            { name: L("Duration"), value: hhmmss(song.metadata.duration ?? 0), inline: true },
-            { name: L("Genre"), value: song.metadata.tags ?? "Unknown", inline: true },
+            { name: L("Duration"), value: hhmmss(song.duration), inline: true },
+            { name: L("Genre"), value: song.style, inline: true },
             { name: L("File Name"), value: `attachment://${fileName}` },
         );
 
-    const img = song.image_large_url ?? song.image_url;
-    if (img) embed.setThumbnail(img);
+    if (song.imgUrl) embed.setThumbnail(song.imgUrl);
 
     return { embed, attachment };
 }
@@ -44,10 +43,7 @@ abstract class GenerateCommandBase extends BotCommandBase {
         this.artist = artist;
     }
 
-    abstract handleGeneration(interaction: ChatInputCommandInteraction<CacheType>, statusUpdate: ComissionStatusFunc): Promise<{
-        error?: string;
-        clipInfos: ClipInfo[];
-    }>
+    abstract handleGeneration(interaction: ChatInputCommandInteraction<CacheType>, statusUpdate: ComissionStatusFunc): ReturnType<typeof this.artist.comission>
 
     async execute(interaction: ChatInputCommandInteraction<CacheType>) {
         const guildId = interaction.guildId;
@@ -80,10 +76,16 @@ abstract class GenerateCommandBase extends BotCommandBase {
         const embeds: EmbedBuilder[] = [];
         const attachments: AttachmentBuilder[] = [];
 
-        for (const clip of result.clipInfos) {
+        for (const song of result.songInfos) {
             try {
-                const mp3 = await this.artist.getMp3FromClip(clip);
-                const ea = buildEmbedAndAttachment(clip, embeds.length + 1, this.artist.name, Buffer.from(mp3));
+                const res = await fetch(song.mp3Url);
+                if (res.status != 200) {
+                    this.logger.logError("Could not load mp3 file!", await res.text());
+                    await this.replyError(interaction, L("Could not load mp3 file!"));
+                    return;
+                }
+                const mp3 = await res.arrayBuffer();
+                const ea = buildEmbedAndAttachment(song, embeds.length + 1, this.artist.name, Buffer.from(mp3));
                 embeds.push(ea.embed);
                 attachments.push(ea.attachment);
             } catch (error) {
@@ -103,11 +105,11 @@ export class GenerateCommand extends GenerateCommandBase {
         this.addStringOption("song_description", L("A description of what the song should be about."), 10, 500);
     }
 
-    override handleGeneration(interaction: ChatInputCommandInteraction<CacheType>, statusUpdate: ComissionStatusFunc): Promise<{ error?: string; clipInfos: ClipInfo[]; }> {
+    override handleGeneration(interaction: ChatInputCommandInteraction<CacheType>, statusUpdate: ComissionStatusFunc): ReturnType<typeof this.artist.comission> {
         return new Promise(resolve => {
             const prompt = interaction.options.getString("song_description");
             if (!prompt) {
-                resolve({ error: L("Missing song description!"), clipInfos: [] });
+                resolve({ error: L("Missing song description!"), songInfos: [] });
                 return;
             }
             this.artist.comission(prompt, statusUpdate).then(resolve);
@@ -122,17 +124,17 @@ export class GenerateCommandCustomLyrics extends GenerateCommandBase {
         this.addStringOption("song_lyrics", L("Lyrics of the song."), 100, 2500);
     }
 
-    override handleGeneration(interaction: ChatInputCommandInteraction<CacheType>, statusUpdate: ComissionStatusFunc): Promise<{ error?: string; clipInfos: ClipInfo[]; }> {
+    override handleGeneration(interaction: ChatInputCommandInteraction<CacheType>, statusUpdate: ComissionStatusFunc): ReturnType<typeof this.artist.comission> {
         return new Promise(resolve => {
             const title = interaction.options.getString("song_title");
             if (!title) {
-                resolve({ error: L("Missing song title!"), clipInfos: [] });
+                resolve({ error: L("Missing song title!"), songInfos: [] });
                 return;
             }
 
             const lyrics = interaction.options.getString("song_lyrics");
             if (!lyrics) {
-                resolve({ error: L("Missing lyrics!"), clipInfos: [] });
+                resolve({ error: L("Missing lyrics!"), songInfos: [] });
                 return;
             }
 

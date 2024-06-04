@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, CacheType } from "discord.js";
+import type { ChatInputCommandInteraction, CacheType } from "discord.js";
 import { BotCommandBase } from "../discord_bot/BotCommandBase";
 import { Artist } from "../Artist";
 import { L } from "../lang/language";

@@ -1,5 +1,5 @@
 import { Logger } from "../Logger";
-import { BillingResponse, ClipInfo, ClipInfoResponse, GenerateRequest, GenerateResponse, LyricsProgressResponse, LyricsResponse } from "./ApiMsgTypes";
+import type { BillingResponse, ClipInfo, ClipInfoResponse, GenerateRequest, GenerateResponse, LyricsProgressResponse, LyricsResponse } from "./ApiMsgTypes";
 
 /**
  * Resolve after a given duration.
