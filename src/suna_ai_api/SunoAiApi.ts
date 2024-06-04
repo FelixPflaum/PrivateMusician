@@ -4,12 +4,8 @@ import type { BillingResponse, ClipInfo, ClipInfoResponse, GenerateRequest, Gene
 /**
  * Resolve after a given duration.
  * @param timeout How long to wait in ms.
- * @param max Optionally roll wait time up to this duration in ms.
  */
-const sleep = (timeout: number, max?: number) => {
-    if (max && max > timeout) {
-        timeout = Math.round(timeout + Math.random() * (max - timeout));
-    }
+const sleep = (timeout: number) => {
     if (timeout <= 0) return Promise.resolve();
     return new Promise(resolve => {
         setTimeout(resolve, timeout);

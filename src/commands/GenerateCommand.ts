@@ -17,22 +17,19 @@ export function hhmmss(timeInSec: number): string {
     return timeStr;
 }
 
-function buildEmbedAndAttachment(song: SongInfo, songNum: number, artist: string, mp3: Buffer) {
-    const fileName = (`${artist} - ${song.title}_${songNum}.mp3`).replace(/ /g, "_");
+function buildAttachment(song: SongInfo, songNum: number, artist: string, mp3: Buffer) {
+    const fileName = (`${artist} - ${song.title}_v${songNum}.mp3`).replace(/ /g, "_");
     const attachment = new AttachmentBuilder(mp3, { name: fileName });
+    return attachment;
+}
 
+function buildEmbed(song: SongInfo) {
     const embed = new EmbedBuilder()
-        .setTitle(`${song.title} (Variant ${songNum})`)
-        .setColor("#41a92f")
-        .setFields(
-            { name: L("Duration"), value: hhmmss(song.duration), inline: true },
-            { name: L("Genre"), value: song.style, inline: true },
-            { name: L("File Name"), value: `attachment://${fileName}` },
-        );
-
+        .setTitle(song.title)
+        .setDescription(song.lyrics)
+        .setColor("#41a92f");
     if (song.imgUrl) embed.setThumbnail(song.imgUrl);
-
-    return { embed, attachment };
+    return embed;
 }
 
 abstract class GenerateCommandBase extends BotCommandBase {
@@ -73,7 +70,6 @@ abstract class GenerateCommandBase extends BotCommandBase {
             return;
         }
 
-        const embeds: EmbedBuilder[] = [];
         const attachments: AttachmentBuilder[] = [];
 
         for (const song of result.songInfos) {
@@ -85,9 +81,7 @@ abstract class GenerateCommandBase extends BotCommandBase {
                     return;
                 }
                 const mp3 = await res.arrayBuffer();
-                const ea = buildEmbedAndAttachment(song, embeds.length + 1, this.artist.name, Buffer.from(mp3));
-                embeds.push(ea.embed);
-                attachments.push(ea.attachment);
+                attachments.push(buildAttachment(song, attachments.length + 1, this.artist.name, Buffer.from(mp3)));
             } catch (error) {
                 this.logger.logError("Error on getting mp3!", error);
                 await this.replyError(interaction, L("Failed to release track!"));
@@ -95,7 +89,7 @@ abstract class GenerateCommandBase extends BotCommandBase {
             }
         }
 
-        this.replySuccess(interaction, L("Songs released!"), embeds, attachments);
+        this.replySuccess(interaction, L("Songs released!"), [buildEmbed(result.songInfos[0]!)], attachments);
     }
 }
 
