@@ -6,6 +6,12 @@ import { SunoAiApi } from "./suna_ai_api/SunoAiApi";
 // When to shut down clients if they aren't used.
 const CLEANUP_TIME = 30 * 60_1000;
 
+export const enum ComissionState {
+    billing, lyrics, waitForStream, streaming, clipDone 
+};
+
+export type ComissionStatusFunc = (status: ComissionState, statusText: string, doneClip?: ClipInfo) => void;
+
 class ApiClientWrapper {
     readonly id: number;
     private readonly info: { agent: string, cookie: string };
@@ -88,6 +94,7 @@ export class Artist {
         cleanup();
     }
 
+    // TODO: Concurrent requests or client rotation?
     private async getClient() {
         let freeClient: ApiClientWrapper | undefined;
 
@@ -117,9 +124,9 @@ export class Artist {
         return freeClient;
     }
 
-    private async doComissionWork(client: SunoAiApi, songDesc: string | { title: string, text: string }, statusUpdate: (status: string, doneClip?: ClipInfo) => void): Promise<{ error?: string, clipInfos: ClipInfo[] }> {
+    private async doComissionWork(client: SunoAiApi, songDesc: string | { title: string, text: string }, statusUpdate: ComissionStatusFunc): Promise<{ error?: string, clipInfos: ClipInfo[] }> {
         try {
-            statusUpdate(L("Checking payment..."));
+            statusUpdate(ComissionState.billing, L("Checking payment..."));
             const binfo = await client.checkBillingInfo();
             if (binfo.total_credits_left <= 0) {
                 return { error: L("I'm overworked for today, go away!"), clipInfos: [] };
@@ -134,7 +141,7 @@ export class Artist {
 
         if (typeof songDesc === "string") {
             try {
-                statusUpdate(L("Writing fire lyrics..."));
+                statusUpdate(ComissionState.lyrics, L("Writing fire lyrics..."));
 
                 if (!songDesc.toLowerCase().includes(this.language)) {
                     songDesc += " Write song in the language: " + this.language;
@@ -154,18 +161,18 @@ export class Artist {
 
         let clipInfos: ClipInfo[];
         try {
-            statusUpdate(L("Gathering band..."));
+            statusUpdate(ComissionState.waitForStream, L("Gathering band..."));
             clipInfos = await client.generateCustomSong(title, text, this.style);
         } catch (error) {
             this.logger.logError(`Error on generateCustomSong`, error);
             return { error: L("Failed to gather band!"), clipInfos: [] };
         }
 
-        statusUpdate(L("Recording songs..."));
+        statusUpdate(ComissionState.streaming, L("Recording songs..."));
 
         try {
             const finalClipInfos = await client.waitForClipCompletion(clipInfos, clip => {
-                statusUpdate(L("Recording songs..."), clip);
+                statusUpdate(ComissionState.clipDone, "", clip);
             });
             return { clipInfos: finalClipInfos };
         } catch (error) {
@@ -180,7 +187,7 @@ export class Artist {
      * @param statusUpdate 
      * @returns 
      */
-    async comission(songDesc: string, statusUpdate: (status: string, doneClip?: ClipInfo) => void): Promise<{ error?: string, clipInfos: ClipInfo[] }> {
+    async comission(songDesc: string, statusUpdate: ComissionStatusFunc): Promise<{ error?: string, clipInfos: ClipInfo[] }> {
         let client: ApiClientWrapper | undefined;
         try {
             client = await this.getClient();
@@ -202,7 +209,7 @@ export class Artist {
      * @param statusUpdate 
      * @returns 
      */
-    async comissionWithLyrics(title: string, text: string, statusUpdate: (status: string, doneClip?: ClipInfo) => void): Promise<{ error?: string, clipInfos: ClipInfo[] }> {
+    async comissionWithLyrics(title: string, text: string, statusUpdate: ComissionStatusFunc): Promise<{ error?: string, clipInfos: ClipInfo[] }> {
         let client: ApiClientWrapper | undefined;
         try {
             client = await this.getClient();
