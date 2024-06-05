@@ -10,7 +10,7 @@ export class LangCommand extends BotCommandBase {
     constructor(artist: Artist) {
         super("setlang", L("Set the lyric generation language."));
         this.artist = artist;
-        this.addStringOption("lang", L("The language to use."), 4, 32);
+        this.addStringOption("lang", L("The language to use."), 0, 32);
         this.setRequiresPermission();
     }
 
@@ -24,7 +24,7 @@ export class LangCommand extends BotCommandBase {
         }
 
         const lang = interaction.options.getString("lang");
-        if (!lang) {
+        if (lang === null) {
             await this.replyError(interaction, L("Missing language!"));
             return;
         }

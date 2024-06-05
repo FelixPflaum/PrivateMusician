@@ -162,11 +162,9 @@ export class Artist {
         if (typeof songDesc === "string") {
             try {
                 statusUpdate(ComissionState.lyrics, L("Writing fire lyrics..."));
-
-                if (!songDesc.toLowerCase().includes(this.language)) {
-                    songDesc += "\nWrite song in the language: " + this.language;
+                if (this.language) {
+                    songDesc = `Song language: ${this.language}\nSong is about: ${songDesc}`;
                 }
-
                 const lyrics = await client.generateLyrics(songDesc);
                 text = lyrics.text;
                 title = lyrics.title;
