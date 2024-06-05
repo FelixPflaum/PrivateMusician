@@ -164,7 +164,7 @@ export class Artist {
                 statusUpdate(ComissionState.lyrics, L("Writing fire lyrics..."));
 
                 if (!songDesc.toLowerCase().includes(this.language)) {
-                    songDesc += " Write song in the language: " + this.language;
+                    songDesc += "\nWrite song in the language: " + this.language;
                 }
 
                 const lyrics = await client.generateLyrics(songDesc);
